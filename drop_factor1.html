@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>💧 IV Drip Calculator</title>
+  
+  <!-- رابط ملف الإعدادات (PWA Manifest) -->
+  <link rel="manifest" href="manifest.json" />
+  
+  <!-- لون واجهة المتصفح عند التثبيت -->
+  <meta name="theme-color" content="#2193b0" />
+
+  <!-- نمط التصميم (CSS) -->
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #6dd5ed, #2193b0);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      background: #ffffffcc;
+      padding: 40px 25px;
+      width: 90%;
+      max-width: 600px;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      backdrop-filter: blur(6px);
+      text-align: center;
+    }
+    h2 {
+      font-size: 34px;
+      margin-bottom: 30px;
+      color: #176d85;
+    }
+    label {
+      display: block;
+      text-align: left;
+      margin: 15px 0 8px;
+      font-weight: bold;
+      color: #333;
+      font-size: 18px;
+    }
+    input, select {
+      width: 100%;
+      padding: 14px;
+      font-size: 18px;
+      margin-bottom: 18px;
+      border: 1.5px solid #ccc;
+      border-radius: 10px;
+      text-align: center;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    input:focus, select:focus {
+      border-color: #2193b0;
+      box-shadow: 0 0 8px rgba(33,147,176,0.3);
+      outline: none;
+    }
+    button {
+      background: linear-gradient(135deg, #56ab2f, #a8e063);
+      color: white;
+      font-size: 20px;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 20px;
+      cursor: pointer;
+      margin-top: 10px;
+      width: 48%;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+    }
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .result {
+      margin-top: 25px;
+      font-size: 22px;
+      color: #176d85;
+      font-weight: bold;
+      text-align: center;
+      padding: 12px;
+      background: #e0f7fa;
+      border-radius: 10px;
+    }
+    .error {
+      color: #d9534f;
+      margin-top: 15px;
+      font-size: 18px;
+      text-align: center;
+    }
+    @media (max-width: 500px) {
+      .button-group {
+        flex-direction: column;
+      }
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>💧 IV Drip Calculator</h2>
+
+    <label for="timeInput">⏱️ Infusion Time:</label>
+    <input type="text" id="timeInput" placeholder="e.g. 2.5 or 2:30">
+
+    <label for="volume">🧪 Fluid Volume (ml):</label>
+    <input type="number" id="volume" step="0.1" placeholder="e.g. 500">
+
+    <label for="dropFactor">⚖️ Drop Factor (gtt/ml):</label>
+    <select id="dropFactor">
+      <option value="">Select or enter manually</option>
+      <option value="10">10 (Macro, Blood)</option>
+      <option value="15">15 (Macro, Standard)</option>
+      <option value="20">20 (Macro, Standard)</option>
+      <option value="60">60 (Micro, Pediatric)</option>
+    </select>
+    <input type="number" id="dropFactorManual" step="1" min="1" placeholder="Or enter custom value">
+
+    <div class="button-group">
+      <button onclick="calculateDrops()">✅ Calculate</button>
+      <button onclick="clearAll()">🗑️ Reset</button>
+    </div>
+    
+    <div id="result" class="result"></div>
+    <div id="error" class="error"></div>
+  </div>
+
+  <script>
+    function calculateDrops() {
+      const timeStr = document.getElementById('timeInput').value.trim();
+      const volume = parseFloat(document.getElementById('volume').value);
+      let dropFactor = parseFloat(document.getElementById('dropFactor').value);
+      
+      // استخدم القيمة اليدوية إذا لم تُختر من القائمة
+      const manualDropFactor = parseFloat(document.getElementById('dropFactorManual').value);
+      if (!isNaN(manualDropFactor)) dropFactor = manualDropFactor;
+
+      const resultDiv = document.getElementById('result');
+      const errorDiv = document.getElementById('error');
+      resultDiv.textContent = "";
+      errorDiv.textContent = "";
+
+      // تحقق من الحقول
+      if (!timeStr || isNaN(volume) || volume <= 0 || isNaN(dropFactor) || dropFactor <= 0) {
+        errorDiv.textContent = "⚠️ Please fill all fields with valid values.";
+        return;
+      }
+
+      // تحويل الوقت (يدعم 2.5 أو "2:30")
+      let hours;
+      if (timeStr.includes(':')) {
+        const [h, m] = timeStr.split(':').map(Number);
+        if (isNaN(h) || isNaN(m) || m < 0 || m >= 60) {
+          errorDiv.textContent = "⚠️ Invalid time format. Use HH:MM (e.g., 2:30).";
+          return;
+        }
+        hours = h + m / 60;
+      } else {
+        hours = parseFloat(timeStr);
+        if (isNaN(hours) || hours <= 0) {
+          errorDiv.textContent = "⚠️ Time must be greater than 0.";
+          return;
+        }
+      }
+
+      // الحساب
+      const volumePerHour = volume / hours;
+      const dropsPerMinute = (volumePerHour * dropFactor) / 60;
+
+      resultDiv.innerHTML = `
+        💡 <strong>Drops per minute:</strong> ${dropsPerMinute.toFixed(1)} gtt/min<br>
+        📊 <strong>Flow Rate:</strong> ${volumePerHour.toFixed(1)} ml/h
+      `;
+    }
+
+    function clearAll() {
+      document.getElementById('timeInput').value = '';
+      document.getElementById('volume').value = '';
+      document.getElementById('dropFactor').value = '';
+      document.getElementById('dropFactorManual').value = '';
+      document.getElementById('result').textContent = '';
+      document.getElementById('error').textContent = '';
+    }
+  </script>
+</body>
+</html>
